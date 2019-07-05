@@ -1,0 +1,20 @@
+<launch>
+
+  <!-- Run Bosch BNO055 IMU -->
+<param name="port" value="/dev/ttyUSB0"/>
+<param name="frame_id" value="imu_bosch_link"/>
+<param name="freqency" value="200"/>
+<param name="operation_mode" value="0x08"/>
+
+  <node pkg="imu_driver" type="imu_node.py" name="imu_node" output="screen">
+    <remap from="/imu/data" to="/imu_bosch/data"/>
+    <remap from="/imu/raw" to="/imu_bosch/raw"/>
+  </node>
+
+	<!-- IMU Bosh transformation publisher -->
+	<node name="base_link_to_imu_bosch"
+			pkg="tf" type="static_transform_publisher" 
+			args="0.0 0.0 0.0 0.0 0.0 0.0 base_link imu_bosch_link 200" />
+</launch>
+
+
