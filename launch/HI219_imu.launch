@@ -1,0 +1,14 @@
+<launch>
+
+  <!-- Run Bosch BNO055 IMU -->
+  <node pkg="imu_driver" type="HI219_imu_node.py" name="HI219_imu_node" output="screen">
+	<param name="port" value="/dev/ttyUSB0"/>
+	<param name="frame_id" value="imu_bosch_link"/>
+	<param name="freqency" value="60"/>
+    <remap from="/imu/data" to="/imu_HI219/data"/>
+    <remap from="/magneticfield/data" to="/magneticfield_HI219/data"/>
+  </node>
+
+</launch>
+
+
