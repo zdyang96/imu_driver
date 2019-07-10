@@ -43,7 +43,7 @@ def read_from_dev(ser, length):
     return buf_in
 
 def con(a,b):
-    return st.unpack('<h', st.pack('BB',a,b))[0]
+    return float(st.unpack('<h', st.pack('BB',a,b))[0])
 
 
 imu_data = Imu()
@@ -100,16 +100,16 @@ if __name__ == '__main__':
             magneticField_data.header.stamp = rospy.Time.now()
             magneticField_data.header.frame_id = frame_id
             magneticField_data.header.seq = seq
-            while offset<Len: 
+            while offset<Len and offset<64: 
                 if  buf[offset]==0x90:
                     id=buf[offset+1]
                     offset+=2
                 elif buf[offset]==0xA0:
                     offset+=7
                 elif buf[offset]==0xA5:
-                    imu_data.linear_acceleration.x=con(buf[offset+1],buf[offset+2])/acc_fact*9.8
-                    imu_data.linear_acceleration.y=con(buf[offset+3],buf[offset+4])/acc_fact*9.8
-                    imu_data.linear_acceleration.z=con(buf[offset+5],buf[offset+6])/acc_fact*9.8
+                    imu_data.linear_acceleration.x=con(buf[offset+1],buf[offset+2])*0.0098
+                    imu_data.linear_acceleration.y=con(buf[offset+3],buf[offset+4])*0.0098
+                    imu_data.linear_acceleration.z=con(buf[offset+5],buf[offset+6])*0.0098
                     imu_data.linear_acceleration_covariance[0] = -1
                     offset+=7
                 elif buf[offset]==0xB0:
@@ -129,10 +129,10 @@ if __name__ == '__main__':
                 elif buf[offset]==0xD9:
                     offset+=13
                 elif buf[offset]==0xD1:
-                    imu_data.orientation.w = st.unpack('<f', st.pack('BBBB', buf[offset+1], buf[offset+2], buf[offset+3], buf[offset+4]))
-                    imu_data.orientation.x = st.unpack('<f', st.pack('BBBB', buf[offset+5], buf[offset+6], buf[offset+7], buf[offset+8]))
-                    imu_data.orientation.y = st.unpack('<f', st.pack('BBBB', buf[offset+9], buf[offset+10], buf[offset+11], buf[offset+12]))
-                    imu_data.orientation.z = st.unpack('<f', st.pack('BBBB', buf[offset+13], buf[offset+14], buf[offset+15], buf[offset+16]))
+                    imu_data.orientation.w = st.unpack('<f', st.pack('BBBB', buf[offset+1], buf[offset+2], buf[offset+3], buf[offset+4]))[0]
+                    imu_data.orientation.x = st.unpack('<f', st.pack('BBBB', buf[offset+5], buf[offset+6], buf[offset+7], buf[offset+8]))[0]
+                    imu_data.orientation.y = st.unpack('<f', st.pack('BBBB', buf[offset+9], buf[offset+10], buf[offset+11], buf[offset+12]))[0]
+                    imu_data.orientation.z = st.unpack('<f', st.pack('BBBB', buf[offset+13], buf[offset+14], buf[offset+15], buf[offset+16]))[0]
                     offset+=17
                 elif buf[offset]==0xF0:
                     offset+=5
