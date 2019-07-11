@@ -1,7 +1,7 @@
 <launch>
 
   <!-- Run Bosch BNO055 IMU -->
-  <node pkg="imu_driver" type="imu_node.py" name="HI219_imu_node" output="screen">
+  <node pkg="imu_driver" type="imu_node.py" name="imu_node" output="screen">
 	<param name="port" value="/dev/ttyUSB0"/>
 	<param name="frame_id" value="imu_bosch_link"/>
 	<param name="freqency" value="200"/>

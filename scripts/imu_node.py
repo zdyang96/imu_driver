@@ -6,6 +6,7 @@ import sys
 import struct as st
 import binascii
 import math
+from tf.transformations import quaternion_from_euler
 
 from time import time
 from sensor_msgs.msg import Imu, Temperature, MagneticField
@@ -38,10 +39,7 @@ def read_from_dev(ser, reg_addr, length):
     return buf_in
 
 def con(a,b):
-    sum=int(a) | (int(b)<<8)
-    if sum>0x8000:
-        sum-=(1<<16)
-    return sum
+    return float(st.unpack('<h', st.pack('BB',a,b))[0])
 
 imu_data = Imu()            # Filtered data
 imu_raw = Imu()             # Raw IMU data
@@ -54,13 +52,14 @@ if __name__ == '__main__':
     rospy.init_node("imu_node")
 
     # Sensor measurements publishers
-    pub_data = rospy.Publisher('imu/data', Imu, queue_size=1)
-    pub_raw = rospy.Publisher('imu/raw', Imu, queue_size=1)
+    pub_data = rospy.Publisher('imu/data', Imu, queue_size=100)
+    pub_raw = rospy.Publisher('imu/raw', Imu, queue_size=100)
 
     # Get parameters values
     port = rospy.get_param('~port', '/dev/ttyUSB0')
     frame_id = rospy.get_param('~frame_id', 'imu_link')
     frequency = rospy.get_param('frequency', 100)
+    operation_mode = rospy.get_param('operation_mode', OPER_MODE_NDOF)
 
     # Open serial port
     #rospy.loginfo("Opening serial port: %s...", port)
@@ -95,8 +94,11 @@ if __name__ == '__main__':
             if sCheck != checkSum:
                 rospy.logerr("Check error")
             yaw = float(sYaw) / 100.0
-            roll = float(sYaw) / 100.0 
-            pitch = float(sYaw) / 100.0
+            roll = float(sRoll) / 100.0 
+            pitch = float(sPitch) / 100.0
+            print(roll,pitch,yaw)
+            q = quaternion_from_euler(roll,pitch,yaw)
+            '''
             cosRoll = math.cos(roll * 0.5);
             sinRoll = math.sin(roll * 0.5)
 
@@ -110,12 +112,12 @@ if __name__ == '__main__':
             x = sinRoll * cosPitch * cosHeading - cosRoll * sinPitch * sinHeading;
             y = cosRoll * sinPitch * cosHeading + sinRoll * cosPitch * sinHeading;
             z = cosRoll * cosPitch * sinHeading - sinRoll * sinPitch * cosHeading; 
-            
+            '''
             # Publish raw data
             imu_raw.header.stamp = rospy.Time.now()
             imu_raw.header.frame_id = frame_id
             imu_raw.header.seq = seq
-            imu_raw.orientation_covariance[0] = -1
+            #imu_raw.orientation_covariance[0] = -1
             imu_raw.linear_acceleration.x = float(sAx) / acc_fact*9.8
             imu_raw.linear_acceleration.y = float(sAy) / acc_fact*9.8
             imu_raw.linear_acceleration.z = float(sAz) / acc_fact*9.8
@@ -123,17 +125,17 @@ if __name__ == '__main__':
             imu_raw.angular_velocity.x = float(sGx) / gyr_fact
             imu_raw.angular_velocity.y = float(sGy) / gyr_fact
             imu_raw.angular_velocity.z = float(sGz) / gyr_fact
-            imu_raw.angular_velocity_covariance[0] = -1
+            #imu_raw.angular_velocity_covariance[0] = -1
             pub_raw.publish(imu_raw)
 
             # Publish filtered data
             imu_data.header.stamp = rospy.Time.now()
             imu_data.header.frame_id = frame_id
             imu_data.header.seq = seq
-            imu_data.orientation.w = float(w)
-            imu_data.orientation.x = float(x)
-            imu_data.orientation.y = float(y)
-            imu_data.orientation.z = float(z)
+            imu_data.orientation.w = q[3]
+            imu_data.orientation.x = q[0]
+            imu_data.orientation.y = q[1]
+            imu_data.orientation.z = q[2]
             imu_data.linear_acceleration.x = float(sAx) / acc_fact*9.8
             imu_data.linear_acceleration.y = float(sAy) / acc_fact*9.8
             imu_data.linear_acceleration.z = float(sAz) / acc_fact*9.8
@@ -141,7 +143,8 @@ if __name__ == '__main__':
             imu_data.angular_velocity.x = float(sGx) / gyr_fact
             imu_data.angular_velocity.y = float(sGy) / gyr_fact
             imu_data.angular_velocity.z = float(sGz) / gyr_fact
-            imu_data.angular_velocity_covariance[0] = -1
+			#if have orientation do not set this value to -1
+            #imu_data.angular_velocity_covariance[0] = -1
             pub_data.publish(imu_data)
 
             seq = seq + 1

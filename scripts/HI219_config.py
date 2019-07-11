@@ -9,3 +9,4 @@ except serial.serialutil.SerialException:
 #buf_out="AT+EOUT=0\r\n"
 buf_out="AT+SETPTL=A5,B0,C0,D0,D1\r\n"
 ser.write(buf_out)
+print("ok")

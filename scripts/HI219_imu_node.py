@@ -9,6 +9,7 @@ import math
 
 from time import time
 from sensor_msgs.msg import Imu, Temperature, MagneticField
+from tf.transformations import euler_from_quaternion
 
 
 # BOSCH BNO055 IMU Registers map and other information
@@ -100,17 +101,17 @@ if __name__ == '__main__':
             magneticField_data.header.stamp = rospy.Time.now()
             magneticField_data.header.frame_id = frame_id
             magneticField_data.header.seq = seq
-            while offset<Len and offset<64: 
+            while offset<Len and offset<47: 
                 if  buf[offset]==0x90:
                     id=buf[offset+1]
                     offset+=2
                 elif buf[offset]==0xA0:
-                    offset+=7
-                elif buf[offset]==0xA5:
                     imu_data.linear_acceleration.x=con(buf[offset+1],buf[offset+2])*0.0098
                     imu_data.linear_acceleration.y=con(buf[offset+3],buf[offset+4])*0.0098
                     imu_data.linear_acceleration.z=con(buf[offset+5],buf[offset+6])*0.0098
                     imu_data.linear_acceleration_covariance[0] = 0
+                    offset+=7
+                elif buf[offset]==0xA5:
                     offset+=7
                 elif buf[offset]==0xB0:
                     imu_data.angular_velocity.x=con(buf[offset+1],buf[offset+2])/10.0
@@ -120,11 +121,13 @@ if __name__ == '__main__':
                     offset+=7
                 elif buf[offset]==0xC0:
                     magneticField_data.magnetic_field.x=con(buf[offset+1],buf[offset+2])/1000.0
-                    magneticField_data.magnetic_field.x=con(buf[offset+3],buf[offset+4])/1000.0
-                    magneticField_data.magnetic_field.x=con(buf[offset+5],buf[offset+6])/1000.0
+                    magneticField_data.magnetic_field.y=con(buf[offset+3],buf[offset+4])/1000.0
+                    magneticField_data.magnetic_field.z=con(buf[offset+5],buf[offset+6])/1000.0
                     magneticField_data.magnetic_field_covariance[0]=0
                     offset+=7
                 elif buf[offset]==0xD0:
+                    # print("euler")
+                    # print(con(buf[offset+1],buf[offset+2])/100/180*3.14,con(buf[offset+3],buf[offset+4])/100/180*3.14,con(buf[offset+5],buf[offset+6])/10/180*3.14)
                     offset+=7
                 elif buf[offset]==0xD9:
                     offset+=13
@@ -135,6 +138,8 @@ if __name__ == '__main__':
                     imu_data.orientation.z = st.unpack('<f', st.pack('BBBB', buf[offset+13], buf[offset+14], buf[offset+15], buf[offset+16]))[0]
                     imu_data.orientation_covariance[0] = 0
                     offset+=17
+                    # print("quate")
+                    # print(euler_from_quaternion([imu_data.orientation.x,imu_data.orientation.y,imu_data.orientation.z,imu_data.orientation.w]))
                 elif buf[offset]==0xF0:
                     offset+=5
                 else:
